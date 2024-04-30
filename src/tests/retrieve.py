@@ -153,46 +153,41 @@ def main():
     print(args, flush=True)
     
     tmp = torch.load(args.graphs)
-    graphs = tmp[0]
-    labels = tmp[args.label]
+    train_g, val_g, test_g = tmp[0]
+    train_l, val_l, test_l = tmp[1]
 
     print(len(graphs))
 
     if args.uniform_costs:
-        model = FixedCostModel(graphs[0].x.size(1)).to(args.device)
+        model = FixedCostModel(test_g[0].x.size(1)).to(args.device)
     elif args.gnn:
-        model = GATModel(graphs[0].x.size(1), gnn_num_layers=args.layers, embedding_dim=args.embedding_dim)
+        model = GATModel(test_g[0].x.size(1), gnn_num_layers=args.layers, embedding_dim=args.embedding_dim)
         model.load_state_dict(torch.load(args.ckp, map_location=torch.device('cpu')))
         model = model.to(args.device) 
     else:
-        model = GEDModel(graphs[0].x.size(1), gnn_num_layers=args.layers, embedding_dim=args.embedding_dim)
+        model = GEDModel(test_g[0].x.size(1), gnn_num_layers=args.layers, embedding_dim=args.embedding_dim)
         model.load_state_dict(torch.load(args.ckp, map_location=torch.device('cpu')))
         model = model.to(args.device) 
 
 
     model.eval()
 
-    train_graphs = graphs[0:args.n_train]
-    test_graphs = graphs[args.n_train+args.n_val:args.n_train+args.n_val+args.n_test]
-
-
-
     
     results = []
 
     if args.cpus <= 1:
-        for i in tqdm(range(len(test_graphs)), ncols=64):
-            indexes = retrieve_hits(test_graphs[i], model=model, database_graphs=train_graphs, k=args.knn, device=args.device, batch_size=args.batch_size)
+        for i in tqdm(range(len(test_g)), ncols=64):
+            indexes = retrieve_hits(test_g[i], model=model, database_graphs=train_g, k=args.knn, device=args.device, batch_size=args.batch_size)
             results.append(indexes)
     else:
         torch.set_num_threads(1)
-        results = distribute_function(retrieve_hits, test_graphs, model=model, n_jobs=args.cpus, database_graphs=train_graphs, k=args.knn, device='cpu', batch_size=128)
+        results = distribute_function(retrieve_hits, test_g, model=model, n_jobs=args.cpus, database_graphs=train_g, k=args.knn, device='cpu', batch_size=128)
 
     if args.logs:
         with open(args.logs+"retrieve_"+args.basename+".log", "a") as myfile:
             myfile.write(str(args)+"\n")
             myfile.write("Query: hits\n")
-            for i in range(len(test_graphs)):
+            for i in range(len(test_g)):
                 indexes = results[i]
                 myfile.write(str(i)+":")
                 for idx in indexes:

@@ -80,21 +80,18 @@ def main():
     print(args, flush=True)
 
     tmp = torch.load(args.graphs)
-    graphs = tmp[0]
-    labels = tmp[1]
-
-    print(len(graphs))
+    train_g, val_g, test_g = tmp[0]
+    train_l, val_l, test_l = tmp[1]
     
     # generate training data 
     tmp = args.samples.split("-")
     num_neg_cla=int(tmp[0]) 
     num_neg=int(tmp[1])
     frac_pos=float(tmp[2])
-    pairs_pos, pairs_neg = build_triplets(graphs, labels, 0, args.n_train, num_neg_cla=num_neg_cla, num_neg=num_neg, frac_pos=frac_pos)
-    #pairs = [val for pair in zip(pairs_pos, pairs_neg) for val in pair]
+    pairs_pos, pairs_neg = build_triplets(train_g, train_l, 0, len(train_g), num_neg_cla=num_neg_cla, num_neg=num_neg, frac_pos=frac_pos)
     
     # generate validation data 
-    pairs_pos_val, pairs_neg_val = build_triplets(graphs, labels, args.n_train, args.n_train+args.n_val, num_neg_cla=num_neg_cla, num_neg=num_neg, frac_pos=frac_pos)
+    pairs_pos_val, pairs_neg_val = build_triplets(val_g, val_l, 0, len(val_g), num_neg_cla=num_neg_cla, num_neg=num_neg, frac_pos=frac_pos)
     pairs_val = [val for pair in zip(pairs_pos_val, pairs_neg_val) for val in pair]
 
     # loaders
@@ -107,7 +104,7 @@ def main():
     
 
     # model
-    model = GEDModel(graphs[0].x.size(1), noise=args.noise, gnn_num_layers=args.layers, embedding_dim=args.embedding_dim, hidden_dim=args.hidden_dim).to(args.device) 
+    model = GEDModel(train_g[0].x.size(1), noise=args.noise, gnn_num_layers=args.layers, embedding_dim=args.embedding_dim, hidden_dim=args.hidden_dim).to(args.device) 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='max', factor=0.1, patience=10, min_lr=1e-6

@@ -83,10 +83,9 @@ def main():
     print(args, flush=True)
     
     tmp = torch.load(args.graphs)
-    graphs = tmp[0]
-    labels = tmp[1]
+    train_g, val_g, test_g = tmp[0]
+    train_l, val_l, test_l = tmp[1]
 
-    print(len(graphs))
     
 
     # generate test data 
@@ -95,8 +94,8 @@ def main():
     num_neg=int(tmp[1])
     frac_pos=float(tmp[2])
     
-    pairs_pos_te, pairs_neg_te = build_triplets(graphs, labels, args.n_train+args.n_val, args.n_train+args.n_val+args.n_test, num_neg_cla=num_neg_cla, num_neg=num_neg, frac_pos=frac_pos)
-    
+    pairs_pos_te, pairs_neg_te = build_triplets(test_g, test_l, 0, len(test_g), num_neg_cla=num_neg_cla, num_neg=num_neg, frac_pos=frac_pos)
+
     loader_test_pos = DataLoader(pairs_pos_te, batch_size=args.batch_size, follow_batch=['x_s', 'x_t'], shuffle = False)
     loader_test_neg = DataLoader(pairs_neg_te, batch_size=args.batch_size, follow_batch=['x_s', 'x_t'], shuffle = False)
     
@@ -104,14 +103,14 @@ def main():
 
 
     if args.uniform_costs:
-        model = FixedCostModel(graphs[0].x.size(1)).to(args.device)
+        model = FixedCostModel(test_g[0].x.size(1)).to(args.device)
     elif args.gnn:
-        model = GATModel(graphs[0].x.size(1), gnn_num_layers=args.layers, embedding_dim=args.embedding_dim)
-        model.load_state_dict(torch.load(args.ckp))
+        model = GATModel(test_g[0].x.size(1), gnn_num_layers=args.layers, embedding_dim=args.embedding_dim)
+        model.load_state_dict(torch.load(args.ckp, map_location=torch.device('cpu')))
         model = model.to(args.device) 
     else:
-        model = GEDModel(graphs[0].x.size(1), gnn_num_layers=args.layers, embedding_dim=args.embedding_dim, hidden_dim=args.hidden_dim)
-        model.load_state_dict(torch.load(args.ckp))
+        model = GEDModel(test_g[0].x.size(1), gnn_num_layers=args.layers, embedding_dim=args.embedding_dim, hidden_dim=args.hidden_dim)
+        model.load_state_dict(torch.load(args.ckp, map_location=torch.device('cpu')))
         model = model.to(args.device) 
 
     model.eval()
