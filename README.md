@@ -8,7 +8,7 @@ Code and data repository for the GMSM (Graph Matching Substitution Matrices) mod
 
 
 ### Citing our work
-> Paolo Pellizzoni, C. Oliver and K. Borgwardt. “Structure- and function-aware substitution matrices via learnable graph matching”, in RECOMB, 2024. [[PDF]]()
+> Paolo Pellizzoni, C. Oliver and K. Borgwardt. “Structure- and function-aware substitution matrices via learnable graph matching”, in RECOMB, 2024. [[PDF]](https://link.springer.com/chapter/10.1007/978-1-0716-3989-4_18)
 
 
 
