@@ -1,21 +1,13 @@
 import os, sys
 import numpy as np
-from timeit import default_timer as timer
-import argparse
 import scipy
 from tqdm import tqdm
-#import matplotlib.pyplot as plt
-import pickle
-import argparse
-import pandas as pd
 import random
-import pickle
 
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
-from torch_geometric.nn import GATConv
 import torch.autograd.profiler as profiler
 from torch.utils.tensorboard import SummaryWriter
 import torch_geometric.transforms as T
@@ -26,67 +18,13 @@ disable_tqdm = False
 
 
 
-def log_data(filename, epoch, loss, acc, val_loss, val_acc, val_auroc):
-    print("epoch:", epoch, loss, acc, val_loss, val_acc, val_auroc, flush=True)
+def log_data(filename, epoch, train_loss, train_acc, train_auroc, val_acc, val_auroc):
+    print("epoch:", epoch, train_loss, train_acc, train_auroc, " " ,val_acc, val_auroc, flush=True)
     with open(filename, "a") as myfile:
-        myfile.write(str(epoch)+", "+str(loss)+", "+str(acc)+", "+str(val_loss)+", "+str(val_acc)+", "+str(val_auroc)+'\n')
+        myfile.write(str(epoch)+", "+str(train_loss)+", "+str(train_acc)+", "+str(train_auroc)+", "+str(val_acc)+", "+str(val_auroc)+'\n')
     
 
 
-def train_step_triplet_retrieval(model, loader_pos, loader_neg, optimizer, margin, args,
-                        val=None, val_p=None, val_n=None):
-    loader_neg_it = iter(loader_neg)
-
-    device = args.device
-    basename = args.logs+"/"+args.basename
-    logging_loss = 0
-    all_geds = []
-    all_homs = []
-    num_pairs = 0
-    num_batch = 0
-    trip_acc = 0
-    zero = torch.zeros(1).to(device)
-
-    
-    i = 0
-    for batch_pos in tqdm(loader_pos, disable=disable_tqdm, ncols=64):
-        model.train()
-        batch_neg = next(loader_neg_it)
-
-        lin_nodemaps, edit_costs, geds_pos = model(batch_pos.to(device))
-        lin_nodemaps, edit_costs, geds_neg = model(batch_neg.to(device))
-        del lin_nodemaps, edit_costs
-        
-        loss = torch.sum(torch.maximum(zero, -(margin-0.1) + geds_pos)) + torch.sum(torch.maximum(zero, 2*((margin+0.1) - geds_neg) ))
-
-
-        trip_acc += (torch.count_nonzero(torch.maximum(zero, geds_neg - geds_pos))).detach().item()
-
-
-        loss.backward()
-
-        
-        optimizer.step()
-        optimizer.zero_grad()
-          
-
-        num_pairs += len(batch_pos)
-        num_batch += 1
-        logging_loss += loss.detach().item()
-
-        if basename is not None and ((i) % 1000 == 0):
-            ls, acc, auroc, tmp1, tmp2 = val_step_triplet(model, val_p, val_n, margin, device)
-            log_data(basename+".log", i, logging_loss/num_pairs, trip_acc/num_pairs, ls, acc, auroc)
-
-            trip_acc = 0
-            logging_loss = 0
-            num_batch = 0
-            num_pairs = 0
-          
-
-        i+=1
-    
-    return logging_loss, trip_acc
 
 
 
