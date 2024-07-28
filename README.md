@@ -10,7 +10,7 @@ Code and data repository for the GMSM (Graph Matching Substitution Matrices) mod
 ### Citing our work
 > Paolo Pellizzoni, C. Oliver and K. Borgwardt. “Structure- and function-aware substitution matrices via learnable graph matching”, in RECOMB, 2024. [[PDF]](https://link.springer.com/chapter/10.1007/978-1-0716-3989-4_18)
 
-
+Check out also our new [paper](https://differentiable.xyz/papers-2024/paper_46.pdf) at the _ICML 2024 Differentiable Almost Everything Workshop_, with support for entropic regularization and new experimental results. 
 
 ### Running the code
 
